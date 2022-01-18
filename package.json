@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec babel-node server.js",
-    "start": "npm run modify && node dist/server.js",
-    "modify": "babel index.js -d dist",
-    "build": "vite build",
+    "dev": "nodemon --exec babel-node index.js",
+    "start": "NODE_ENV=production node index.js",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --outDir dist/server --ssr src/server.jsx",
     "preview": "vite preview",
-    "heroku-postbuild": "npm run build && npm start"
+    "heroku-postbuild": "npm run build:client && npm run build:server && npm start"
   },
   "keywords": [],
   "author": "",

@@ -26,39 +26,32 @@ Just add the `MONGODB_URI` variable to the .env file, run `npm i` and then `npm 
 
 ## React 18
 
-- The fact I didn't follow Vite's docs and did the whole SSR thing myself using React 17's renderToString API instead means that you can upgrade to React 18 :D
+- I used React 17's renderToString API, and it means that you can upgrade to React 18 :D
 
-To do it, first off, run: `npm i react@rc react-dom@rc` (npm i react@18 react-dom@18 when it reaches its official release), then modify server.js like this:
+To do it, first off, run: `npm i react@rc react-dom@rc` (npm i react@18 react-dom@18 when it reaches its official release), then modify src/server.jsx like this:
 
 `import { renderToString } from 'react-dom/server'` to `import { renderToPipeableStream } from 'react-dom/server'`
 
 `
-const renderApp = (req, res) => {
-  const context = {};
-  let didError = false;
-  const html = "<!DOCTYPE html>" + renderToString(
-    <Html>
-      <StaticRouter context={context} location={req.url}>
-        <App />
-      </StaticRouter>
-    </Html>
-  );
-  return { context, html }
+export function render(url, context) {
+    return renderToString(
+        <StaticRouter context={context} location={url}>
+            <App />
+        </StaticRouter>
+    );
 }
 `
 
 to
 
 `
-const renderApp = (req, res) => {
+export function render(url, context) {
   const context = {};
   let didError = false;
-  const html = renderToPipeableStream(
-    <Html>
-      <StaticRouter context={context} location={req.url}>
-        <App />
-      </StaticRouter>
-    </Html>,
+  return renderToPipeableStream(
+    <StaticRouter context={context} location={url}>
+      <App />
+    </StaticRouter>,
     ,
     {
       onCompleteShell() {
@@ -93,33 +86,66 @@ function handleErrors(fn) {
 then modify this part:
 
 `
-app.get("*", (req, res) => {
-      try {
-        const { context, html } = renderApp(req, res);
-        if (context.url) {
-          return res.redirect(context.url);
-        }
-        else {
-          return res.status(200).send(html);
-        }
+app.use('*', async (req, res) => {
+    try {
+      const url = req.originalUrl
+      let template, render
+      if (!isProd) {
+        template = fs.readFileSync(resolve('index.html'), 'utf-8')
+        template = await vite.transformIndexHtml(url, template)
+        render = (await vite.ssrLoadModule('/src/server.jsx')).render
       }
-      catch (e) {
-        vite.ssrFixStacktrace(e)
-        console.error(e)
-        res.status(500).end(e.message)
+      else {
+        template = indexProd
+        render = require('./dist/server/server.js').render
       }
-});
+      const context = {}
+      const appHtml = render(url, context)
+      if (context.url) {
+        return res.redirect(context.url)
+      }
+      const html = template.replace(`<!--content-->`, appHtml)
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(html)
+    }
+    catch (e) {
+      !isProd && vite.ssrFixStacktrace(e)
+      console.error(e)
+      res.status(500).end(e.message)
+    }
+  })
 `
-(there are two of them)
 
 to
 
 `
-app.get('/*', handleErrors(async function (req, res) {
-  renderApp(req, res);
-}));
+app.use('*', async (req, res) => {
+    try {
+      const url = req.originalUrl
+      let template, render
+      if (!isProd) {
+        template = fs.readFileSync(resolve('index.html'), 'utf-8')
+        template = await vite.transformIndexHtml(url, template)
+        render = (await vite.ssrLoadModule('/src/server.jsx')).render
+      }
+      else {
+        template = indexProd
+        render = require('./dist/server/server.js').render
+      }
+      const context = {}
+      handleErrors(async function () {
+        render(url, context)
+      })
+      if (context.url) {
+        return res.redirect(context.url)
+      }
+    }
+    catch (e) {
+      !isProd && vite.ssrFixStacktrace(e)
+      console.error(e)
+      res.status(500).end(e.message)
+    }
+  });
 `
-(much better, don't you think so?),
 
 then in client.jsx, change
 
