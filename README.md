@@ -19,6 +19,7 @@ Just add the `MONGODB_URI` variable to the .env file, run `npm i` and then `npm 
   - React-router-dom
   - Axios
   - SWR
+  - and several more...
 
 ## Deployment
 

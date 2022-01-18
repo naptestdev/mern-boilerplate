@@ -12,7 +12,7 @@ const PostRoute = require("./routes/PostRoute");
 const isTest = process.env.NODE_ENV === 'test';
 const isProd = process.env.NODE_ENV === 'production';
 
-root = process.cwd()
+let root = process.cwd()
 
 async function createServer() {
   const resolve = (p) => path.resolve(__dirname, p)

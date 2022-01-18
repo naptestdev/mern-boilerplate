@@ -9,7 +9,7 @@
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr src/server.jsx",
     "preview": "vite preview",
-    "heroku-postbuild": "npm run build:client && npm run build:server && npm start"
+    "heroku-postbuild": "npm run build:client && npm run build:server"
   },
   "keywords": [],
   "author": "",
