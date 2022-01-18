@@ -1,5 +1,5 @@
 import { createPost, getAllPost } from "../services/post";
-
+import React from "react";
 import { Link } from "react-router-dom";
 import useSWR from "swr";
 import { useState } from "react";

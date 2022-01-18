@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-
+import React from "react";
 import { getPostById } from "../services/post";
 import useSWR from "swr";
 
